@@ -95,6 +95,6 @@ const drawingStep = new Step({
   },
 });
 
-feneksWorkflow.step(characterStep).then(storyStep2).then(drawingStep).commit();
+feneksWorkflow.step(characterStep).then(storyStep2).commit();
 
 export { feneksWorkflow };
