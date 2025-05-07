@@ -2,6 +2,7 @@ import { openai } from '@ai-sdk/openai';
 import { Agent } from '@mastra/core/agent';
 import { Step, Workflow } from '@mastra/core/workflows';
 import { z } from 'zod';
+import { experimental_generateImage as generateImage } from 'ai';
 
 const llm = openai('gpt-4o');
 
@@ -48,6 +49,9 @@ const storyStep1 = new Step({
 
 const storyStep2 = new Step({
   id: "storyStep2",
+  outputSchema: z.object({
+    story: z.string(),
+  }),
   execute: async ({ context, mastra }) => {
     const character = context.getStepResult(characterStep)?.character;
     const prompt = `Based on the following character ${character}, suggest an appropriate story ideas for a comic strip.
@@ -73,6 +77,24 @@ const storyStep2 = new Step({
   }
 });
 
-feneksWorkflow.step(characterStep).then(storyStep2).commit();
+const drawingStep = new Step({
+  id: "drawingStep",
+  execute: async ({ context }) => {
+    const story = context.getStepResult(storyStep2)?.story;
+    if (!story) {
+      throw new Error("Story not found");
+    }
+    const { image } = await generateImage({
+      model: openai.image('dall-e-3'),
+      prompt: story,
+      size: '1024x1024',
+    });// Assuming you want the first image
+    return {
+      images: image.base64,
+    };
+  },
+});
+
+feneksWorkflow.step(characterStep).then(storyStep2).then(drawingStep).commit();
 
 export { feneksWorkflow };
